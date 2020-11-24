@@ -5,8 +5,8 @@ account: redsnic
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1929995
-bundleId: 2960352
+bundleId: 3895750
 url: https://redsnic.shinyapps.io/CIMICE_WEB/
-when: 1585848069.92279
+when: 1606148549.94555
 asMultiple: FALSE
 asStatic: FALSE

@@ -22,8 +22,6 @@ library(glue)
 library(tidyr)
 # Graph data management
 library(igraph)
-# Remove transitive edges on o graph
-library(nem)
 # Interactive graph visualization
 library(networkD3)
 # Interactive graph visualization
@@ -45,7 +43,7 @@ library("ComplexHeatmap")
 ```{r, error=F, message=F, results = "hide", warning=F, message=F}
 # --- remote
 if(!require(CIMICE)){
-  devtools::install_github("redsnic/CIMICE-R", subdir = "CIMICE")
+  devtools::install_github("redsnic/CIMICE")
   library(CIMICE)
 }
 # --- local
@@ -153,7 +151,8 @@ renderUI({
         tabsetPanel(
             tabPanel("visNetwork", rv$vis),
             tabPanel("networkD3", rv$nd3),
-            tabPanel("ggraph", rv$gg)
+            tabPanel("ggraph", rv$gg),
+            tabPanel("dot", rv$dot)
         )
     ) %>% shiny::tagAppendAttributes(style = 'width: 100%;')
 })
@@ -207,6 +206,7 @@ reactive({
     rv$gg <- renderPlot({draw.ggraph(rv$g, rv$weights, rv$labels)})
     rv$nd3 <- renderForceNetwork({draw.networkD3(rv$g, rv$weights, rv$labels)})
     rv$vis <- renderVisNetwork({draw.visNetwork(rv$g, rv$weights, rv$labels)})
+    rv$dot <- renderPrint({cat(to.dot(rv$g, rv$weights, rv$labels))})
     
 }) 
 ```
