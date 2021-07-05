@@ -53,7 +53,7 @@ if(!require(CIMICE)){
 ```{r, context="server"}
 # Default example
 # genes
-dataset <- make.dataset(A,B,C,D) %>%
+dataset <- make_dataset(A,B,C,D) %>%
 # samples
   update_df("S1", 0, 0, 0, 1) %>%
   update_df("S2", 1, 0, 0, 0) %>%
@@ -74,7 +74,7 @@ rv$inputMode <- "CAPRI"
 
 update_inputs <- function(){
     if(input$inputTabs == "From Text"){
-      rv$dataset <- read.CAPRI.string(input$inputDataset)
+      rv$dataset <- read_CAPRI_string(input$inputDataset)
     } else if(input$inputTabs == "From File") {
       rv$dataset <- read(input$uploadedFile$datapath)
     }
@@ -163,51 +163,27 @@ renderUI({
 reactive({
     # Resize dataset
     dataset <- rv$dataset
+    rv$compacted.dataset <- compact_dataset(dataset)$matrix
+    
     if(rv$limitedSize && rv$inputMode == "CAPRI"){
       n.genes <- rv$maxGenes
       n.samples <- rv$maxSamples
-      dataset <- select.samples.on.mutations(dataset , n.samples, desc = F) %>% select.genes.on.mutations(n.genes)
+      dataset <- select_samples_on_mutations(dataset , n.samples, desc = F) %>%
+        select_genes_on_mutations(n.genes)
     }
   
     # preprocess input
-    samples <- NULL
-    freqs   <- NULL
-    labels  <- NULL
-    genes   <- NULL
-    if(rv$inputMode == "CAPRI"){
-        # Compact for corrplots
-        # update corrplot views
-        rv$compacted.dataset <- compact.dataset.easy(dataset) %>% select(-freq)
-        # preprocess
-        preproc <- dataset.preprocessing(dataset)
-        samples <- preproc[["samples"]]
-        freqs   <- preproc[["freqs"]]
-        labels  <- preproc[["labels"]]
-        genes   <- preproc[["genes"]]
-    } else if (rv$inputMode == "CAPRIpop"){
-        # dataset should be already compacted
-        # update corrplot views
-        rv$compacted.dataset <- dataset %>% select(-freq)
-        # preprocess
-        preproc <- dataset.preprocessing.population(dataset)
-        samples <- preproc[["samples"]]
-        freqs   <- preproc[["freqs"]]
-        labels  <- preproc[["labels"]]
-        genes   <- preproc[["genes"]]  
-    } 
+    out <- quick_run(dataset, mode = rv$inputMode)
     
     # compute topology and weights
-    g <- graph.non.transitive.subset.topology(samples,labels)
-    W <- compute.weights.default(g, freqs)
-    rv$g <- g
-    rv$weights <- W
-    rv$labels <- labels
+    rv$g <- out$topology
+    rv$weights <- out$weights
+    rv$labels <- out$labels
     # prepare output
-    rv$gg <- renderPlot({draw.ggraph(rv$g, rv$weights, rv$labels)})
-    rv$nd3 <- renderForceNetwork({draw.networkD3(rv$g, rv$weights, rv$labels)})
-    rv$vis <- renderVisNetwork({draw.visNetwork(rv$g, rv$weights, rv$labels)})
-    rv$dot <- renderPrint({cat(to.dot(rv$g, rv$weights, rv$labels))})
-    
+    rv$gg <- renderPlot({draw_ggraph(rv$g, rv$weights, rv$labels)})
+    rv$nd3 <- renderForceNetwork({draw_networkD3(rv$g, rv$weights, rv$labels)})
+    rv$vis <- renderVisNetwork({draw_visNetwork(rv$g, rv$weights, rv$labels, original_dataset=dataset)})
+    rv$dot <- renderPrint({cat(to_dot(rv$g, rv$weights, rv$labels))})
 }) 
 ```
 
@@ -236,10 +212,10 @@ reactive({
       oncoPrint(m, show_column_names = TRUE)
     })
     rv$mutationspergene <- renderPlot({
-        gene.mutations.hist(rv$dataset)
+        gene_mutations_hist(rv$dataset)
     })  
     rv$mutationspersample <- renderPlot({
-        sample.mutations.hist(rv$dataset, binwidth = 1)
+        sample_mutations_hist(rv$dataset, binwidth = 1)
     })  
 })
 ```
@@ -261,12 +237,12 @@ renderUI({
 reactive({
     rv$corrplotgene <- renderPlot({
         dataset <- rv$compacted.dataset
-        corrplot.genes(dataset)
+        corrplot_genes(dataset)
     })
     
     rv$corrplotsample <- renderPlot({
         dataset <- rv$compacted.dataset
-        corrplot.samples(dataset)
+        corrplot_samples(dataset)
     })
 })
 ```
