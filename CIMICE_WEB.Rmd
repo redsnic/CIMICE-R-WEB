@@ -9,6 +9,8 @@ your analisys and run the program by pressing the "Load new Dataset" button.
 
 ```{r, echo=F}
 knitr::opts_chunk$set(echo = F, fig.align="center")
+# to add bioconductor
+# setRepositories(addURLs = c(BioC = "https://bioconductor.org/packages/3.13/bioc"))
 ```
 
 ```{r, error=F, message=F, results = "hide"}
@@ -145,6 +147,19 @@ observeEvent(input$loadData, { update_inputs() })
 
 ## Output
 
+Output settings:
+
+```{r}
+selectInput(
+  "labelSelect",
+  label = "Choose what to print in nodes' labels",
+  choices = list(samples = "samplesIDs", genes = "geneIDs", seqential = "sequentialIDs")
+)
+numericInput("max_col", "Maximum number of IDs per row of label", 3, min=1, max=200) %>% shiny::tagAppendAttributes(style = 'width: 100%;')
+numericInput("max_row", "Maximum number of rows of IDs per label", 3, min=1, max=200) %>% shiny::tagAppendAttributes(style = 'width: 100%;')
+```
+
+
 ```{r}
 renderUI({
     mainPanel(
@@ -175,15 +190,11 @@ reactive({
     # preprocess input
     out <- quick_run(dataset, mode = rv$inputMode)
     
-    # compute topology and weights
-    rv$g <- out$topology
-    rv$weights <- out$weights
-    rv$labels <- out$labels
     # prepare output
-    rv$gg <- renderPlot({draw_ggraph(rv$g, rv$weights, rv$labels)})
-    rv$nd3 <- renderForceNetwork({draw_networkD3(rv$g, rv$weights, rv$labels)})
-    rv$vis <- renderVisNetwork({draw_visNetwork(rv$g, rv$weights, rv$labels, original_dataset=dataset)})
-    rv$dot <- renderPrint({cat(to_dot(rv$g, rv$weights, rv$labels))})
+    rv$gg <- renderPlot({draw_ggraph(out, mode = input$labelSelect, max_col = input$max_col, max_row = input$max_row)})
+    rv$nd3 <- renderForceNetwork({draw_networkD3(out, mode = input$labelSelect, max_col = input$max_col, max_row = input$max_row)})
+    rv$vis <- renderVisNetwork({draw_visNetwork(out, mode = input$labelSelect, max_col = input$max_col, max_row = input$max_row)})
+    rv$dot <- renderPrint({cat(to_dot(out, mode = input$labelSelect, max_col = input$max_col, max_row = input$max_row))})
 }) 
 ```
 
