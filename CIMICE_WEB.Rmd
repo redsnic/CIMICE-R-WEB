@@ -11,6 +11,7 @@ your analisys and run the program by pressing the "Load new Dataset" button.
 knitr::opts_chunk$set(echo = F, fig.align="center")
 # to add bioconductor
 # setRepositories(addURLs = c(BioC = "https://bioconductor.org/packages/3.13/bioc"))
+# you need CIMICE from GitHub
 ```
 
 ```{r, error=F, message=F, results = "hide"}
@@ -75,15 +76,23 @@ rv$maxSamples <- 200
 rv$inputMode <- "CAPRI"
 
 update_inputs <- function(){
-    if(input$inputTabs == "From Text"){
-      rv$dataset <- read_CAPRI_string(input$inputDataset)
-    } else if(input$inputTabs == "From File") {
-      rv$dataset <- read(input$uploadedFile$datapath)
-    }
     rv$limitedSize <- input$limitedSize
     rv$maxGenes <- input$maxGenes
     rv$maxSamples <- input$maxSamples
     rv$inputMode <- input$formatSelect
+    if(rv$inputMode == "CAPRI"){
+      if(input$inputTabs == "From Text"){
+        rv$dataset <- read_CAPRI_string(input$inputDataset)
+      } else if(input$inputTabs == "From File") {
+        rv$dataset <- read(input$uploadedFile$datapath)
+      }
+    }else{
+      if(input$inputTabs == "From Text"){
+        rv$dataset <- read_CAPRIpop_string(input$inputDataset)
+      } else if(input$inputTabs == "From File") {
+        rv$dataset <- read_CAPRIpop(input$uploadedFile$datapath)
+      }
+    }
 }
 
 
@@ -178,8 +187,13 @@ renderUI({
 reactive({
     # Resize dataset
     dataset <- rv$dataset
-    rv$compacted.dataset <- compact_dataset(dataset)$matrix
     
+    if(rv$inputMode == "CAPRI"){
+      rv$compacted.dataset <- compact_dataset(dataset)$matrix
+    }else{
+      rv$compacted.dataset <- dataset$matrix
+    }
+
     if(rv$limitedSize && rv$inputMode == "CAPRI"){
       n.genes <- rv$maxGenes
       n.samples <- rv$maxSamples
@@ -222,12 +236,23 @@ reactive({
       rownames(m)<-rownames(rv$compacted.dataset)
       oncoPrint(m, show_column_names = TRUE)
     })
-    rv$mutationspergene <- renderPlot({
+    
+    if(rv$inputMode == "CAPRIpop"){
+      rv$mutationspergene <- renderText({
+        "Not computed with CAPRIpop datasts"
+      })
+      rv$mutationspersample <- renderText({
+        "Not computed with CAPRIpop datasts"
+      }) 
+    }else{
+      rv$mutationspergene <- renderPlot({
         gene_mutations_hist(rv$dataset)
-    })  
-    rv$mutationspersample <- renderPlot({
-        sample_mutations_hist(rv$dataset, binwidth = 1)
-    })  
+      })  
+      rv$mutationspersample <- renderPlot({
+          sample_mutations_hist(rv$dataset, binwidth = 1)
+      })  
+    }
+
 })
 ```
 
